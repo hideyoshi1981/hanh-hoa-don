@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Hanh Hoa Don</title>
+<link rel="manifest" href="manifest.json">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.4.3/decimal.min.js"></script>
+<style>
+* { -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+.screen { display: none; }
+.screen.active { display: block; }
+.radio-checked { background: #10b981; }
+.vat-active { background: #dbeafe !important; border-color: #3b82f6 !important; color: #3b82f6 !important; }
+</style>
+</head>
+<body class="bg-gray-100">
+
+<!-- Settings Screen -->
+<div id="settings-screen" class="screen active min-h-screen" style="background: #1a4d2e;">
+<div class="p-6">
+<h1 class="text-xl font-semibold text-white mb-6">Cài đặt</h1>
+<div class="mb-8">
+<h2 class="text-white font-semibold mb-4">Ngôn ngữ</h2>
+<div onclick="setLanguage('vi')" class="bg-white bg-opacity-10 rounded-xl p-4 mb-3 border-2 border-green-500 cursor-pointer" id="lang-vi">
+<div class="flex items-center">
+<div class="w-5 h-5 rounded-full border-2 border-green-500 flex items-center justify-center mr-3">
+<div class="w-2.5 h-2.5 rounded-full radio-checked" id="radio-vi"></div>
+</div>
+<div class="flex-1"><p class="text-white font-medium">Tiếng Việt</p></div>
+<span class="text-2xl">🇻🇳</span>
+</div>
+</div>
+<div onclick="setLanguage('ja')" class="bg-white bg-opacity-10 rounded-xl p-4 border-2 border-transparent cursor-pointer" id="lang-ja">
+<div class="flex items-center">
+<div class="w-5 h-5 rounded-full border-2 border-green-500 flex items-center justify-center mr-3">
+<div class="w-2.5 h-2.5 rounded-full" id="radio-ja"></div>
+</div>
+<div class="flex-1"><p class="text-white font-medium">日本語</p></div>
+<span class="text-2xl">🇯🇵</span>
+</div>
+</div>
+</div>
+<div class="mb-8">
+<h2 class="text-white font-semibold mb-4">Tiền tệ</h2>
+<div onclick="setCurrency('VND')" class="bg-white bg-opacity-10 rounded-xl p-4 mb-3 border-2 border-transparent cursor-pointer" id="curr-vnd">
+<div class="flex items-center">
+<div class="w-5 h-5 rounded-full border-2 border-green-500 flex items-center justify-center mr-3">
+<div class="w-2.5 h-2.5 rounded-full" id="radio-vnd"></div>
+</div>
+<div class="flex-1"><p class="text-white font-medium">VND (₫)</p></div>
+<span class="text-2xl text-green-500 font-bold">₫</span>
+</div>
+</div>
+<div onclick="setCurrency('JPY')" class="bg-white bg-opacity-10 rounded-xl p-4 border-2 border-green-500 cursor-pointer" id="curr-jpy">
+<div class="flex items-center">
+<div class="w-5 h-5 rounded-full border-2 border-green-500 flex items-center justify-center mr-3">
+<div class="w-2.5 h-2.5 rounded-full radio-checked" id="radio-jpy"></div>
+</div>
+<div class="flex-1"><p class="text-white font-medium">JPY (¥)</p></div>
+<span class="text-2xl text-green-500 font-bold">¥</span>
+</div>
+</div>
+</div>
+<button onclick="showScreen('dashboard')" class="w-full bg-green-500 text-white font-bold py-4 rounded-xl">Tiếp tục → Dashboard</button>
+</div>
+</div>
+
+<!-- Dashboard Screen -->
+<div id="dashboard-screen" class="screen min-h-screen" style="background: #0f172a;">
+<div class="p-6">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center">
+<div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center mr-3">
+<span class="text-white font-bold text-lg">📊</span>
+</div>
+<div>
+<p class="text-gray-400 text-xs" id="greeting-text">Xin chào 👋</p>
+<p class="text-white font-semibold">Dashboard</p>
+</div>
+</div>
+<button onclick="showScreen('settings')" class="w-9 h-9 rounded-full bg-gray-800 flex items-center justify-center">⚙️</button>
+</div>
+<div class="rounded-2xl p-6 mb-6" style="background: #1e3a5f;">
+<p class="text-gray-400 text-xs font-semibold mb-2" id="revenue-text">💰 TỔNG DOANH THU</p>
+<p class="text-white text-4xl font-bold mb-1" id="total-revenue">¥745,920</p>
+<p class="text-green-500 text-sm mb-4">+745% tháng trước</p>
+<div class="h-32 flex items-end justify-between gap-1 mt-4">
+<div class="flex-1 bg-blue-500 rounded-t" style="height: 60%;"></div>
+<div class="flex-1 bg-blue-500 rounded-t" style="height: 45%;"></div>
+<div class="flex-1 bg-blue-500 rounded-t" style="height: 75%;"></div>
+<div class="flex-1 bg-blue-500 rounded-t" style="height: 55%;"></div>
+<div class="flex-1 bg-blue-500 rounded-t" style="height: 80%;"></div>
+<div class="flex-1 bg-blue-500 rounded-t" style="height: 90%;"></div>
+<div class="flex-1 bg-blue-500 rounded-t" style="height: 70%;"></div>
+</div>
+</div>
+<div class="mb-6">
+<p class="text-white font-semibold mb-4" id="quick-actions-text">Tiện ích ⚡</p>
+<div class="grid grid-cols-2 gap-3">
+<button onclick="showScreen('invoice')" class="bg-blue-500 rounded-2xl p-4 text-left">
+<p class="text-3xl mb-2">📄</p>
+<p class="text-white font-semibold text-sm" id="btn-new-invoice">Lập đơn mới</p>
+</button>
+<button class="bg-pink-500 rounded-2xl p-4 text-left">
+<p class="text-3xl mb-2">📱</p>
+<p class="text-white font-semibold text-sm" id="btn-scan-qr">Quét QR</p>
+</button>
+<button class="bg-orange-500 rounded-2xl p-4 text-left">
+<p class="text-3xl mb-2">📦</p>
+<p class="text-white font-semibold text-sm" id="btn-add-items">Thêm hàng</p>
+</button>
+<button onclick="goToInvoiceAndAddCustomer()" class="bg-green-500 rounded-2xl p-4 text-left">
+<p class="text-3xl mb-2">👤</p>
+<p class="text-white font-semibold text-sm" id="btn-add-customer">Thêm khách</p>
+</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Invoice Screen -->
+<div id="invoice-screen" class="screen min-h-screen bg-gray-100">
+<div id="invoice-content">
+<div class="bg-white p-4 flex items-center justify-between">
+<button onclick="showScreen('dashboard')" class="text-2xl">←</button>
+<h1 class="font-semibold">HÓA ĐƠN (<span id="invoice-currency">JPY</span>)</h1>
+<button onclick="resetInvoice()" class="text-red-500 font-bold text-sm">Reset</button>
+</div>
+<div class="bg-white m-4 p-4 rounded-xl">
+<div class="flex items-center">
+<div class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center mr-3"><span class="text-2xl">📦</span></div>
+<div class="flex-1">
+<input type="text" id="store-name" value="" class="font-semibold text-sm border-b border-gray-300 focus:border-blue-500 outline-none px-2 py-1 w-full mb-1" placeholder="✏️ Nhập tên cửa hàng..." autocomplete="off">
+<input type="text" id="store-address" value="" class="text-gray-500 text-xs border-b border-gray-200 focus:border-blue-500 outline-none px-2 py-1 w-full mb-1" placeholder="✏️ Nhập địa chỉ..." autocomplete="off">
+<input type="tel" id="store-phone" value="" class="text-gray-500 text-xs border-b border-gray-200 focus:border-blue-500 outline-none px-2 py-1 w-full" placeholder="✏️ Nhập số điện thoại..." autocomplete="off">
+</div>
+</div>
+</div>
+<div class="px-4 flex gap-2 mb-4">
+<div class="flex-1">
+<p class="text-gray-500 text-xs font-semibold mb-1">MÃ HĐ</p>
+<div class="bg-white p-2 rounded-lg">
+<input type="text" id="invoice-code" value="" class="text-sm w-full outline-none border-b border-gray-200 focus:border-blue-500 px-1" placeholder="✏️ Nhập mã hóa đơn...">
+</div>
+</div>
+<div class="flex-1">
+<p class="text-gray-500 text-xs font-semibold mb-1">NGÀY</p>
+<div class="bg-white p-2 rounded-lg">
+<input type="date" id="invoice-date" class="text-sm w-full outline-none border-b border-gray-200 focus:border-blue-500 px-1">
+</div>
+</div>
+</div>
+<div class="px-4 mb-4">
+<div class="flex items-center justify-between mb-3">
+<p class="text-xs font-bold">KHÁCH HÀNG</p>
+<button onclick="addNewCustomer()" class="bg-green-500 text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-green-600 shadow">+ Thêm mới</button>
+</div>
+<div id="customer-list">
+<!-- Khách hàng sẽ được thêm vào đây -->
+</div>
+</div>
+<div class="px-4 mb-4">
+<div class="flex items-center justify-between mb-2">
+<p class="text-xs font-bold">SẢN PHẨM <span class="text-gray-400 font-normal" id="product-count">0 mặt hàng</span></p>
+<button onclick="addNewProduct()" class="text-blue-500 text-xs font-bold">+ Thêm SP</button>
+</div>
+<div id="product-list">
+<!-- Sản phẩm sẽ được thêm vào đây -->
+</div>
+</div>
+
+<div class="px-4 mb-4">
+<p class="text-xs font-bold mb-2">THUẾ VAT</p>
+<div class="flex gap-2">
+<button onclick="setVAT(0)" class="flex-1 py-3 rounded-lg bg-white border font-semibold" id="vat-0">0%</button>
+<button onclick="setVAT(0.08)" class="flex-1 py-3 rounded-lg bg-white border font-semibold vat-active" id="vat-8">8%</button>
+<button onclick="setVAT(0.10)" class="flex-1 py-3 rounded-lg bg-white border font-semibold" id="vat-10">10%</button>
+</div>
+</div>
+<div class="bg-white m-4 p-4 rounded-xl">
+<div class="flex justify-between mb-2">
+<p class="text-gray-600 text-sm">Tạm tính</p>
+<p class="font-semibold" id="subtotal">¥9,500</p>
+</div>
+<div class="flex justify-between mb-2">
+<p class="text-gray-600 text-sm">VAT (<span id="vat-percent">8</span>%)</p>
+<p class="font-semibold" id="vat-amount">¥760</p>
+</div>
+<div class="flex justify-between mb-2">
+<div class="flex items-center gap-2">
+<p class="text-gray-600 text-sm">Giảm giá</p>
+<span class="bg-green-500 text-white text-xs font-bold px-1.5 py-0.5 rounded">VIP</span>
+</div>
+<p class="font-semibold text-green-500" id="discount">+¥250</p>
+</div>
+<div class="border-t my-2"></div>
+<div class="flex justify-between">
+<p class="font-bold">Tổng cộng</p>
+<p class="font-bold text-xl text-blue-500" id="grand-total">¥10,010</p>
+</div>
+</div>
+</div>
+<div class="bg-white p-4 border-t">
+<p class="text-gray-400 text-xs text-center mb-1">Tổng Thanh Toán</p>
+<p class="font-bold text-lg text-center mb-3" id="export-total">¥10,010</p>
+<button onclick="exportInvoice()" class="w-full bg-blue-500 text-white font-bold py-4 rounded-xl">Xuất hóa đơn & Thu tiền 💰</button>
+</div>
+</div>
+
+
+<script>
+let currentScreen='settings';
+let language='vi';
+let currency='JPY';
+let vatRate=0.08;
+let products=[];
+const discount=250;
+
+const translations={
+  vi:{greeting:'Xin chào 👋',revenue:'💰 TỔNG DOANH THU',quickActions:'Tiện ích ⚡',newInvoice:'Lập đơn mới',scanQR:'Quét QR',addItems:'Thêm hàng',addCustomer:'Thêm khách'},
+  ja:{greeting:'こんにちは 👋',revenue:'💰 総収入',quickActions:'クイックアクション ⚡',newInvoice:'新規請求書',scanQR:'QRスキャン',addItems:'商品追加',addCustomer:'顧客追加'}
+};
+
+function showScreen(screen){
+  console.log('Switching to:',screen);
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(screen+'-screen').classList.add('active');
+  currentScreen=screen;
+  updateUI();
+}
+
+function setLanguage(lang){
+  console.log('Language changed to:',lang);
+  language=lang;
+  document.querySelectorAll('[id^="lang-"]').forEach(el=>{el.classList.remove('border-green-500');el.classList.add('border-transparent');});
+  document.querySelectorAll('[id^="radio-vi"],[id^="radio-ja"]').forEach(el=>el.classList.remove('radio-checked'));
+  document.getElementById('lang-'+lang).classList.add('border-green-500');
+  document.getElementById('lang-'+lang).classList.remove('border-transparent');
+  document.getElementById('radio-'+lang).classList.add('radio-checked');
+  updateUI();
+}
+
+function setCurrency(curr){
+  console.log('Currency changed to:',curr);
+  currency=curr;
+  document.querySelectorAll('[id^="curr-"]').forEach(el=>{el.classList.remove('border-green-500');el.classList.add('border-transparent');});
+  document.querySelectorAll('[id^="radio-vnd"],[id^="radio-jpy"]').forEach(el=>el.classList.remove('radio-checked'));
+  document.getElementById('curr-'+curr.toLowerCase()).classList.add('border-green-500');
+  document.getElementById('curr-'+curr.toLowerCase()).classList.remove('border-transparent');
+  document.getElementById('radio-'+curr.toLowerCase()).classList.add('radio-checked');
+  document.getElementById('invoice-currency').textContent=curr;
+  calculate();
+}
+
+function updateUI(){
+  console.log('Updating UI for language:',language);
+  const t=translations[language];
+  const greetingEl=document.getElementById('greeting-text');
+  if(greetingEl)greetingEl.textContent=t.greeting;
+  const revenueEl=document.getElementById('revenue-text');
+  if(revenueEl)revenueEl.textContent=t.revenue;
+  const quickActionsEl=document.getElementById('quick-actions-text');
+  if(quickActionsEl)quickActionsEl.textContent=t.quickActions;
+  const btnNewInvoice=document.getElementById('btn-new-invoice');
+  if(btnNewInvoice)btnNewInvoice.textContent=t.newInvoice;
+  const btnScanQR=document.getElementById('btn-scan-qr');
+  if(btnScanQR)btnScanQR.textContent=t.scanQR;
+  const btnAddItems=document.getElementById('btn-add-items');
+  if(btnAddItems)btnAddItems.textContent=t.addItems;
+  const btnAddCustomer=document.getElementById('btn-add-customer');
+  if(btnAddCustomer)btnAddCustomer.textContent=t.addCustomer;
+}
+
+function formatAmount(amount){
+  const rounded=Math.round(amount);
+  const formatted=rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  return currency==='VND'?formatted+'₫':'¥'+formatted;
+}
+
+function setVAT(rate){
+  console.log('VAT:',rate);
+  vatRate=rate;
+  document.querySelectorAll('[id^="vat-"]').forEach(el=>el.classList.remove('vat-active'));
+  const btnId=rate===0?'vat-0':(rate===0.08?'vat-8':'vat-10');
+  document.getElementById(btnId).classList.add('vat-active');
+  document.getElementById('vat-percent').textContent=Math.round(rate*100);
+  calculate();
+}
+
+function updateQuantity(index,value){
+  products[index].quantity=parseInt(value)||0;
+  calculate();
+}
+
+function updatePrice(index,value){
+  products[index].unitPrice=parseInt(value)||0;
+  calculate();
+}
+
+function addNewCustomer(){
+  console.log('🔵 addNewCustomer function called');
+  const customerList=document.getElementById('customer-list');
+  console.log('🔵 customerList element:',customerList);
+  
+  if(!customerList){
+    console.error('❌ customer-list element not found!');
+    alert('❌ Lỗi: Không tìm thấy danh sách khách hàng!');
+    return;
+  }
+  
+  console.log('✅ customer-list found, creating new customer...');
+  
+  const newCustomer=document.createElement('div');
+  newCustomer.className='bg-green-50 p-3 rounded-xl border-2 border-green-500 mb-2 shadow-lg';
+  newCustomer.innerHTML=`
+    <div class="flex items-center mb-2">
+      <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center mr-3">
+        <span class="text-white text-xl">👤</span>
+      </div>
+      <input type="text" value="" class="flex-1 font-semibold text-sm border-2 border-green-500 rounded px-2 py-2 focus:border-blue-500 outline-none" placeholder="✏️ Nhập tên khách hàng..." autocomplete="off">
+      <button onclick="removeCustomer(this)" class="text-red-500 ml-2 text-2xl font-bold hover:text-red-700">✕</button>
+    </div>
+    <div class="flex items-center mt-2">
+      <span class="text-gray-500 text-sm mr-2">📞</span>
+      <input type="tel" value="" class="flex-1 text-sm border-2 border-green-500 rounded px-2 py-2 focus:border-blue-500 outline-none" placeholder="✏️ Nhập số điện thoại..." autocomplete="off">
+    </div>
+    <div class="flex items-center mt-2">
+      <span class="text-gray-500 text-sm mr-2">📍</span>
+      <input type="text" value="" class="flex-1 text-sm border-2 border-green-500 rounded px-2 py-2 focus:border-blue-500 outline-none" placeholder="✏️ Nhập địa chỉ..." autocomplete="off">
+    </div>
+  `;
+  customerList.appendChild(newCustomer);
+  console.log('✅ New customer added successfully!');
+  
+  // Scroll to the new customer
+  newCustomer.scrollIntoView({behavior:'smooth',block:'center'});
+  
+  // Focus on the new input
+  setTimeout(()=>{
+    const inputs=newCustomer.querySelectorAll('input');
+    if(inputs[0]){
+      inputs[0].focus();
+      inputs[0].click();
+      console.log('✅ Input focused');
+    }
+  },300);
+}
+
+function removeCustomer(btn){
+  const customerDiv=btn.closest('.bg-white, .bg-green-50');
+  if(customerDiv){
+    customerDiv.remove();
+    console.log('✅ Customer removed');
+  }
+}
+
+function goToInvoiceAndAddCustomer(){
+  console.log('🔵 Going to invoice and adding customer...');
+  showScreen('invoice');
+  // Wait for screen to render, then add customer
+  setTimeout(()=>{
+    addNewCustomer();
+  },500);
+}
+
+function addNewProduct(){
+  const productList=document.getElementById('product-list');
+  const index=products.length;
+  products.push({quantity:1,unitPrice:0});
+  const icons=['📦','🎁','🛍️','📱','💻','🎮','📷','🎧','⌚','👕','👟','🍔','☕','🍰','🎂'];
+  const randomIcon=icons[Math.floor(Math.random()*icons.length)];
+  const colors=['bg-purple-500','bg-blue-500','bg-green-500','bg-red-500','bg-yellow-500','bg-pink-500','bg-indigo-500'];
+  const randomColor=colors[Math.floor(Math.random()*colors.length)];
+  const newProduct=document.createElement('div');
+  newProduct.className='bg-white p-3 rounded-xl mb-2';
+  newProduct.innerHTML=`
+    <div class="flex items-center mb-2">
+      <div class="w-12 h-12 rounded-lg ${randomColor} flex items-center justify-center mr-3"><span class="text-2xl">${randomIcon}</span></div>
+      <input type="text" value="" class="flex-1 font-semibold text-sm border-b border-gray-300 focus:border-blue-500 outline-none px-2 py-1" placeholder="Tên sản phẩm">
+      <p class="font-bold ml-3" id="total-${index}">¥0</p>
+      <button onclick="removeProduct(this)" class="text-red-500 ml-2">✕</button>
+    </div>
+    <div class="flex items-center gap-2">
+      <input type="number" value="1" onchange="updateQuantity(${index}, this.value)" class="w-16 text-sm font-semibold border rounded px-2 py-1" min="0" step="1" placeholder="SL">
+      <select class="text-xs border rounded px-1 py-1">
+        <option>cái</option>
+        <option>kg</option>
+        <option>gói</option>
+        <option>hộp</option>
+        <option>thùng</option>
+        <option>chai</option>
+        <option>bộ</option>
+      </select>
+      <span class="text-xs text-gray-500">×</span>
+      <input type="number" value="0" onchange="updatePrice(${index}, this.value)" class="w-24 text-sm font-semibold border rounded px-2 py-1" min="0" step="100" placeholder="Đơn giá">
+      <span class="text-xs text-gray-500" id="price-${index}">¥0</span>
+    </div>
+  `;
+  productList.appendChild(newProduct);
+  updateProductCount();
+  calculate();
+}
+
+function removeProduct(btn){
+  const productDiv=btn.closest('.bg-white.p-3.rounded-xl.mb-2');
+  const index=Array.from(productDiv.parentElement.children).indexOf(productDiv);
+  products.splice(index,1);
+  productDiv.remove();
+  updateProductCount();
+  calculate();
+}
+
+function updateProductCount(){
+  document.getElementById('product-count').textContent=products.length+' mặt hàng';
+}
+
+function calculate(){
+  let subtotal=new Decimal(0);
+  products.forEach((product,index)=>{
+    const lineTotal=new Decimal(product.quantity).times(new Decimal(product.unitPrice));
+    subtotal=subtotal.plus(lineTotal);
+    document.getElementById('total-'+index).textContent=formatAmount(lineTotal.toNumber());
+    document.getElementById('price-'+index).textContent=formatAmount(product.unitPrice);
+  });
+  const vatAmount=subtotal.times(new Decimal(vatRate));
+  const grandTotal=subtotal.plus(vatAmount).plus(new Decimal(discount));
+  document.getElementById('subtotal').textContent=formatAmount(subtotal.toNumber());
+  document.getElementById('vat-amount').textContent=formatAmount(vatAmount.toNumber());
+  document.getElementById('discount').textContent='+'+formatAmount(discount);
+  document.getElementById('grand-total').textContent=formatAmount(grandTotal.toNumber());
+  document.getElementById('export-total').textContent=formatAmount(grandTotal.toNumber());
+  document.getElementById('total-revenue').textContent=formatAmount(grandTotal.toNumber());
+}
+
+function resetInvoice(){
+  if(confirm('Reset hóa đơn? / リセット?')){
+    products=[{quantity:1,unitPrice:6000},{quantity:2,unitPrice:1750}];
+    vatRate=0.08;
+    document.querySelector('input[onchange*="0"]').value=1;
+    document.querySelector('input[onchange*="1"]').value=2;
+    setVAT(0.08);
+    calculate();
+  }
+}
+
+async function exportInvoice(){
+  try{
+    const element=document.getElementById('invoice-content');
+    const canvas=await html2canvas(element,{scale:2,backgroundColor:'#f5f5f5'});
+    
+    // Check if running on mobile (iOS/Android)
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if(isMobile){
+      // For mobile: Open image in new window so user can save to Photos
+      canvas.toBlob(function(blob){
+        const url=URL.createObjectURL(blob);
+        const newWindow=window.open(url,'_blank');
+        if(newWindow){
+          // Show instructions
+          setTimeout(()=>{
+            alert('📸 Nhấn giữ vào ảnh và chọn "Save to Photos" / "Lưu vào Ảnh"\n\n長押しして「写真に保存」を選択');
+          },500);
+        }else{
+          // Fallback: download
+          const a=document.createElement('a');
+          a.href=url;
+          a.download='invoice-'+Date.now()+'.png';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          alert('✅ Đã tải xuống! / ダウンロード完了!');
+        }
+      },'image/png');
+    }else{
+      // For desktop: Download file
+      canvas.toBlob(function(blob){
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=url;
+        a.download='invoice-'+Date.now()+'.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        alert('✅ Xuất thành công! / エクスポート成功!');
+      },'image/png');
+    }
+  }catch(error){
+    alert('❌ Lỗi / エラー: '+error.message);
+  }
+}
+
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+
+// Set current date on load
+function setCurrentDate(){
+  const today=new Date();
+  const year=today.getFullYear();
+  const month=String(today.getMonth()+1).padStart(2,'0');
+  const day=String(today.getDate()).padStart(2,'0');
+  const dateStr=`${year}-${month}-${day}`;
+  document.getElementById('invoice-date').value=dateStr;
+}
+
+setCurrentDate();
+calculate();
+</script>
+</body>
+</html>
