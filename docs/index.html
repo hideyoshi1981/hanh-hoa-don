@@ -446,35 +446,58 @@ async function exportInvoice(){
     
     // Show loading message
     const originalText=document.querySelector('button[onclick="exportInvoice()"]').textContent;
-    document.querySelector('button[onclick="exportInvoice()"]').textContent='⏳ Đang xuất...';
+    document.querySelector('button[onclick="exportInvoice()"]').textContent='⏳ Đang xuất PDF...';
+    
+    // Wait a bit for UI to update
+    await new Promise(resolve=>setTimeout(resolve,100));
     
     // Capture the invoice as canvas with high quality
     const canvas=await html2canvas(element,{
-      scale:3,
+      scale:2,
       backgroundColor:'#ffffff',
       useCORS:true,
+      allowTaint:true,
       logging:false,
+      width:element.scrollWidth,
+      height:element.scrollHeight,
       windowWidth:element.scrollWidth,
-      windowHeight:element.scrollHeight
+      windowHeight:element.scrollHeight,
+      scrollX:0,
+      scrollY:0,
+      imageTimeout:0,
+      removeContainer:true
     });
     
-    // Convert canvas to image
-    const imgData=canvas.toDataURL('image/jpeg',1.0);
+    // Convert canvas to image with high quality
+    const imgData=canvas.toDataURL('image/png',1.0);
     
     // Calculate PDF dimensions (A4 size)
     const imgWidth=210; // A4 width in mm
+    const pageHeight=297; // A4 height in mm
     const imgHeight=(canvas.height*imgWidth)/canvas.width;
+    let heightLeft=imgHeight;
     
     // Create PDF
     const {jsPDF}=window.jspdf;
     const pdf=new jsPDF({
-      orientation:imgHeight>imgWidth?'portrait':'portrait',
+      orientation:'portrait',
       unit:'mm',
-      format:'a4'
+      format:'a4',
+      compress:true
     });
     
-    // Add image to PDF
-    pdf.addImage(imgData,'JPEG',0,0,imgWidth,imgHeight);
+    let position=0;
+    
+    // Add image to PDF (handle multiple pages if needed)
+    pdf.addImage(imgData,'PNG',0,position,imgWidth,imgHeight,'','FAST');
+    heightLeft-=pageHeight;
+    
+    while(heightLeft>=0){
+      position=heightLeft-imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData,'PNG',0,position,imgWidth,imgHeight,'','FAST');
+      heightLeft-=pageHeight;
+    }
     
     // Check if running on mobile (iOS/Android)
     const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -483,21 +506,31 @@ async function exportInvoice(){
       // For mobile: Create blob and open in new window
       const pdfBlob=pdf.output('blob');
       const url=URL.createObjectURL(pdfBlob);
+      
+      // Try to open in new window
       const newWindow=window.open(url,'_blank');
       
       if(newWindow){
         setTimeout(()=>{
-          alert('📄 PDF đã mở!\n\nNhấn Share (⬆️) → "Save to Files" để lưu\nhoặc "Print" → "Save as PDF" để lưu vào Photos\n\nPDFが開きました！\nShare → "Save to Files"で保存');
-        },1000);
+          alert('📄 PDF đã mở!\n\n✅ Nhấn Share (⬆️) → "Save to Files"\n✅ Hoặc "Print" → "Save as PDF"\n\nPDFが開きました！');
+        },800);
       }else{
-        // Fallback: download
-        const fileName='invoice-'+Date.now()+'.pdf';
-        pdf.save(fileName);
+        // Fallback: Create download link
+        const a=document.createElement('a');
+        a.href=url;
+        const invoiceCode=document.getElementById('invoice-code').value||'invoice';
+        const fileName=invoiceCode+'-'+Date.now()+'.pdf';
+        a.download=fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
         alert('✅ PDF đã tải xuống: '+fileName);
       }
     }else{
       // For desktop: Download PDF
-      const fileName='invoice-'+Date.now()+'.pdf';
+      const invoiceCode=document.getElementById('invoice-code').value||'invoice';
+      const fileName=invoiceCode+'-'+Date.now()+'.pdf';
       pdf.save(fileName);
       alert('✅ PDF đã tải xuống: '+fileName);
     }
