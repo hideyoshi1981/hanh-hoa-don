@@ -1,11 +1,12 @@
 // Service Worker for PWA - Offline Support
-const CACHE_NAME = 'invoice-app-v3';
+const CACHE_NAME = 'invoice-app-v4';
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.4.3/decimal.min.js'
 ];
 
