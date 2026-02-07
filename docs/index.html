@@ -443,127 +443,162 @@ function resetInvoice(){
 async function exportInvoice(){
   const btn=document.querySelector('button[onclick="exportInvoice()"]');
   const originalText=btn.textContent;
-  btn.textContent='⏳ Đang xuất PDF...';
+  btn.textContent='⏳ Đang chuẩn bị...';
   btn.disabled=true;
   
   try{
-    const invoiceContent=document.getElementById('invoice-content');
+    // Lấy dữ liệu
+    const storeName=document.getElementById('store-name').value||'';
+    const storeAddress=document.getElementById('store-address').value||'';
+    const storePhone=document.getElementById('store-phone').value||'';
+    const invoiceCode=document.getElementById('invoice-code').value||'INV-001';
+    const invoiceDate=document.getElementById('invoice-date').value||'';
     
-    // Ẩn các nút không cần thiết
-    const hideButtons=invoiceContent.querySelectorAll('button');
-    hideButtons.forEach(b=>b.style.display='none');
-    
-    // Thay thế input bằng text để render đẹp hơn
-    const inputs=invoiceContent.querySelectorAll('input, select');
-    const replacements=[];
-    
-    inputs.forEach(input=>{
-      const span=document.createElement('span');
-      span.textContent=input.value||'';
-      span.className=input.className;
-      span.style.cssText=window.getComputedStyle(input).cssText;
-      span.style.border='none';
-      span.style.background='transparent';
-      span.style.display='inline-block';
-      span.style.minHeight='20px';
-      
-      if(input.value.trim()===''){
-        span.style.display='none';
-      }
-      
-      input.style.display='none';
-      input.parentNode.insertBefore(span,input);
-      replacements.push({input,span});
-    });
-    
-    // Đợi DOM update
-    await new Promise(resolve=>setTimeout(resolve,200));
-    
-    // Capture với cấu hình tối ưu
-    const canvas=await html2canvas(invoiceContent,{
-      scale:2,
-      useCORS:true,
-      allowTaint:true,
-      backgroundColor:'#ffffff',
-      logging:false,
-      width:invoiceContent.scrollWidth,
-      height:invoiceContent.scrollHeight,
-      windowWidth:invoiceContent.scrollWidth,
-      windowHeight:invoiceContent.scrollHeight,
-      onclone:(clonedDoc)=>{
-        // Fix font trong bản clone
-        const clonedContent=clonedDoc.getElementById('invoice-content');
-        if(clonedContent){
-          clonedContent.style.fontFamily='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        }
+    // Lấy khách hàng
+    const customers=[];
+    document.querySelectorAll('#customer-list>div').forEach(div=>{
+      const inputs=div.querySelectorAll('input');
+      if(inputs.length>=1&&inputs[0].value.trim()){
+        customers.push({
+          name:inputs[0].value||'',
+          phone:inputs[1]?inputs[1].value:'',
+          address:inputs[2]?inputs[2].value:''
+        });
       }
     });
     
-    // Khôi phục giao diện
-    replacements.forEach(({input,span})=>{
-      span.remove();
-      input.style.display='';
-    });
-    hideButtons.forEach(b=>b.style.display='');
+    // Tính toán
+    let subtotal=0;
+    products.forEach(p=>subtotal+=p.quantity*p.unitPrice);
+    const vatAmount=subtotal*vatRate;
+    const grandTotal=subtotal+vatAmount;
     
-    // Tạo PDF
-    const {jsPDF}=window.jspdf;
-    const pdf=new jsPDF({
-      orientation:'portrait',
-      unit:'mm',
-      format:'a4',
-      compress:true
-    });
+    // Tạo HTML để in
+    const printWindow=window.open('','_blank');
+    printWindow.document.write(`
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hóa đơn ${invoiceCode}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:20px;background:#fff;color:#000;}
+.invoice{max-width:800px;margin:0 auto;background:#fff;}
+.header{text-align:center;margin-bottom:20px;border-bottom:2px solid #000;padding-bottom:10px;}
+.header h1{font-size:24px;margin-bottom:5px;}
+.info-row{display:flex;justify-content:space-between;margin-bottom:15px;}
+.info-section{margin-bottom:20px;}
+.info-section h3{font-size:14px;font-weight:bold;margin-bottom:8px;border-bottom:1px solid #ccc;padding-bottom:5px;}
+.info-section p{font-size:12px;line-height:1.6;margin-bottom:3px;}
+table{width:100%;border-collapse:collapse;margin:20px 0;}
+table th,table td{border:1px solid #000;padding:8px;text-align:left;font-size:12px;}
+table th{background:#f0f0f0;font-weight:bold;}
+table td.number{text-align:right;}
+.totals{margin-top:20px;text-align:right;}
+.totals div{margin-bottom:8px;font-size:14px;}
+.totals .grand-total{font-size:18px;font-weight:bold;border-top:2px solid #000;padding-top:10px;margin-top:10px;}
+.footer{text-align:center;margin-top:30px;font-size:11px;color:#666;border-top:1px solid #ccc;padding-top:10px;}
+@media print{
+  body{padding:0;}
+  .no-print{display:none;}
+}
+</style>
+</head>
+<body>
+<div class="invoice">
+  <div class="header">
+    <h1>HÓA ĐƠN / INVOICE</h1>
+    <div class="info-row">
+      <div>Mã HĐ: <strong>${invoiceCode}</strong></div>
+      <div>Ngày: <strong>${invoiceDate}</strong></div>
+    </div>
+  </div>
+  
+  ${storeName?`
+  <div class="info-section">
+    <h3>THÔNG TIN CỬA HÀNG</h3>
+    <p><strong>${storeName}</strong></p>
+    ${storeAddress?`<p>Địa chỉ: ${storeAddress}</p>`:''}
+    ${storePhone?`<p>SĐT: ${storePhone}</p>`:''}
+  </div>
+  `:''}
+  
+  ${customers.length>0?`
+  <div class="info-section">
+    <h3>KHÁCH HÀNG</h3>
+    ${customers.map(c=>`
+      <p><strong>${c.name}</strong></p>
+      ${c.phone?`<p>SĐT: ${c.phone}</p>`:''}
+      ${c.address?`<p>Địa chỉ: ${c.address}</p>`:''}
+    `).join('')}
+  </div>
+  `:''}
+  
+  <div class="info-section">
+    <h3>SẢN PHẨM</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:40px;">STT</th>
+          <th>Tên sản phẩm</th>
+          <th style="width:60px;">SL</th>
+          <th style="width:60px;">ĐVT</th>
+          <th style="width:100px;" class="number">Đơn giá</th>
+          <th style="width:120px;" class="number">Thành tiền</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${products.map((p,i)=>`
+          <tr>
+            <td>${i+1}</td>
+            <td>${p.name||'Sản phẩm'}</td>
+            <td>${p.quantity}</td>
+            <td>${p.unit||'cái'}</td>
+            <td class="number">${formatAmount(p.unitPrice)}</td>
+            <td class="number">${formatAmount(p.quantity*p.unitPrice)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="totals">
+    <div>Tạm tính: <strong>${formatAmount(subtotal)}</strong></div>
+    <div>VAT (${Math.round(vatRate*100)}%): <strong>${formatAmount(vatAmount)}</strong></div>
+    <div class="grand-total">TỔNG CỘNG: <strong>${formatAmount(grandTotal)}</strong></div>
+  </div>
+  
+  <div class="footer">
+    <p>Cảm ơn quý khách! / Thank you!</p>
+  </div>
+</div>
+
+<div class="no-print" style="text-align:center;margin-top:30px;">
+  <button onclick="window.print()" style="background:#3b82f6;color:#fff;border:none;padding:15px 30px;font-size:16px;border-radius:8px;cursor:pointer;margin-right:10px;">🖨️ In hóa đơn</button>
+  <button onclick="window.close()" style="background:#6b7280;color:#fff;border:none;padding:15px 30px;font-size:16px;border-radius:8px;cursor:pointer;">✕ Đóng</button>
+</div>
+
+<script>
+// Tự động mở hộp thoại in sau 500ms
+setTimeout(()=>{
+  window.print();
+},500);
+</script>
+</body>
+</html>
+    `);
+    printWindow.document.close();
     
-    const imgData=canvas.toDataURL('image/png',1.0);
-    const pdfWidth=210;
-    const pdfHeight=(canvas.height*pdfWidth)/canvas.width;
-    
-    pdf.addImage(imgData,'PNG',0,0,pdfWidth,pdfHeight,'','FAST');
-    
-    // Lưu PDF
-    const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const invoiceCode=document.getElementById('invoice-code').value||'invoice';
-    const fileName=`${invoiceCode}-${Date.now()}.pdf`;
-    
-    if(isMobile){
-      // Trên mobile: Tạo blob và mở
-      const pdfBlob=pdf.output('blob');
-      const url=URL.createObjectURL(pdfBlob);
-      
-      // Thử mở trong tab mới
-      const newWindow=window.open(url,'_blank');
-      
-      if(newWindow){
-        // Thành công
-        setTimeout(()=>{
-          alert('📄 PDF đã mở!\n\n✅ Nhấn Share (⬆️) → "Save to Files"\n✅ Hoặc nhấn giữ → "Save to Photos"');
-        },500);
-      }else{
-        // Fallback: Tạo link download
-        const a=document.createElement('a');
-        a.href=url;
-        a.download=fileName;
-        a.style.display='none';
-        document.body.appendChild(a);
-        a.click();
-        
-        setTimeout(()=>{
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        },100);
-        
-        alert('✅ PDF đã tải xuống!\nKiểm tra trong Files app hoặc Downloads');
-      }
-    }else{
-      // Trên desktop: Download trực tiếp
-      pdf.save(fileName);
-      alert('✅ PDF đã tải xuống: '+fileName);
-    }
+    // Thông báo
+    setTimeout(()=>{
+      alert('📄 Hóa đơn đã mở!\n\n✅ Trên iPhone:\n- Nhấn "Print" → Chọn máy in\n- Hoặc pinch-to-zoom preview → Share → "Save to Photos"\n\n✅ Trên máy tính:\n- Chọn "Save as PDF" trong Print dialog');
+    },300);
     
   }catch(error){
     console.error('Export error:',error);
-    alert('❌ Lỗi xuất PDF: '+error.message);
+    alert('❌ Lỗi: '+error.message);
   }finally{
     btn.textContent=originalText;
     btn.disabled=false;
