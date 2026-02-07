@@ -442,106 +442,233 @@ function resetInvoice(){
 
 async function exportInvoice(){
   try{
-    const element=document.getElementById('invoice-content');
+    // Show loading
+    const btn=document.querySelector('button[onclick="exportInvoice()"]');
+    const originalText=btn.textContent;
+    btn.textContent='⏳ Đang xuất PDF...';
+    btn.disabled=true;
     
-    // Show loading message
-    const originalText=document.querySelector('button[onclick="exportInvoice()"]').textContent;
-    document.querySelector('button[onclick="exportInvoice()"]').textContent='⏳ Đang xuất PDF...';
-    
-    // Wait a bit for UI to update
     await new Promise(resolve=>setTimeout(resolve,100));
     
-    // Capture the invoice as canvas with high quality
-    const canvas=await html2canvas(element,{
-      scale:2,
-      backgroundColor:'#ffffff',
-      useCORS:true,
-      allowTaint:true,
-      logging:false,
-      width:element.scrollWidth,
-      height:element.scrollHeight,
-      windowWidth:element.scrollWidth,
-      windowHeight:element.scrollHeight,
-      scrollX:0,
-      scrollY:0,
-      imageTimeout:0,
-      removeContainer:true
+    // Get data
+    const storeName=document.getElementById('store-name').value||'Cửa hàng';
+    const storeAddress=document.getElementById('store-address').value||'';
+    const storePhone=document.getElementById('store-phone').value||'';
+    const invoiceCode=document.getElementById('invoice-code').value||'INV-001';
+    const invoiceDate=document.getElementById('invoice-date').value||'';
+    
+    // Get customers
+    const customers=[];
+    document.querySelectorAll('#customer-list>div').forEach(div=>{
+      const inputs=div.querySelectorAll('input');
+      if(inputs.length>=2){
+        customers.push({
+          name:inputs[0].value||'',
+          phone:inputs[1].value||'',
+          address:inputs[2]?inputs[2].value:''
+        });
+      }
     });
     
-    // Convert canvas to image with high quality
-    const imgData=canvas.toDataURL('image/png',1.0);
+    // Get products
+    const productList=[];
+    products.forEach((product,index)=>{
+      const nameInput=document.querySelector(`#product-list>div:nth-child(${index+1}) input[type="text"]`);
+      const qtyInput=document.querySelector(`#product-list>div:nth-child(${index+1}) input[type="number"]`);
+      const unitSelect=document.querySelector(`#product-list>div:nth-child(${index+1}) select`);
+      const priceInput=document.querySelector(`#product-list>div:nth-child(${index+1}) input[onchange*="updatePrice"]`);
+      
+      if(nameInput&&qtyInput&&priceInput){
+        productList.push({
+          name:nameInput.value||'Sản phẩm',
+          quantity:parseInt(qtyInput.value)||0,
+          unit:unitSelect?unitSelect.value:'cái',
+          unitPrice:parseInt(priceInput.value)||0,
+          total:product.quantity*product.unitPrice
+        });
+      }
+    });
     
-    // Calculate PDF dimensions (A4 size)
-    const imgWidth=210; // A4 width in mm
-    const pageHeight=297; // A4 height in mm
-    const imgHeight=(canvas.height*imgWidth)/canvas.width;
-    let heightLeft=imgHeight;
+    // Calculate totals
+    let subtotal=0;
+    productList.forEach(p=>subtotal+=p.total);
+    const vatAmount=subtotal*vatRate;
+    const grandTotal=subtotal+vatAmount;
     
     // Create PDF
     const {jsPDF}=window.jspdf;
     const pdf=new jsPDF({
       orientation:'portrait',
       unit:'mm',
-      format:'a4',
-      compress:true
+      format:'a4'
     });
     
-    let position=0;
+    let y=20;
+    const pageWidth=210;
+    const margin=15;
+    const contentWidth=pageWidth-2*margin;
     
-    // Add image to PDF (handle multiple pages if needed)
-    pdf.addImage(imgData,'PNG',0,position,imgWidth,imgHeight,'','FAST');
-    heightLeft-=pageHeight;
+    // Header
+    pdf.setFontSize(20);
+    pdf.setFont(undefined,'bold');
+    pdf.text('HÓA ĐƠN / INVOICE',pageWidth/2,y,{align:'center'});
+    y+=10;
     
-    while(heightLeft>=0){
-      position=heightLeft-imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData,'PNG',0,position,imgWidth,imgHeight,'','FAST');
-      heightLeft-=pageHeight;
+    pdf.setFontSize(10);
+    pdf.setFont(undefined,'normal');
+    pdf.text(`Mã HĐ: ${invoiceCode}`,margin,y);
+    pdf.text(`Ngày: ${invoiceDate}`,pageWidth-margin,y,{align:'right'});
+    y+=10;
+    
+    // Store info
+    pdf.setFontSize(12);
+    pdf.setFont(undefined,'bold');
+    pdf.text('THÔNG TIN CỬA HÀNG',margin,y);
+    y+=7;
+    
+    pdf.setFontSize(10);
+    pdf.setFont(undefined,'normal');
+    pdf.text(storeName,margin,y);
+    y+=5;
+    if(storeAddress){
+      pdf.text(`Địa chỉ: ${storeAddress}`,margin,y);
+      y+=5;
+    }
+    if(storePhone){
+      pdf.text(`SĐT: ${storePhone}`,margin,y);
+      y+=5;
+    }
+    y+=5;
+    
+    // Customer info
+    if(customers.length>0){
+      pdf.setFontSize(12);
+      pdf.setFont(undefined,'bold');
+      pdf.text('KHÁCH HÀNG',margin,y);
+      y+=7;
+      
+      pdf.setFontSize(10);
+      pdf.setFont(undefined,'normal');
+      customers.forEach(customer=>{
+        if(customer.name){
+          pdf.text(`Tên: ${customer.name}`,margin,y);
+          y+=5;
+        }
+        if(customer.phone){
+          pdf.text(`SĐT: ${customer.phone}`,margin,y);
+          y+=5;
+        }
+        if(customer.address){
+          pdf.text(`Địa chỉ: ${customer.address}`,margin,y);
+          y+=5;
+        }
+      });
+      y+=5;
     }
     
-    // Check if running on mobile (iOS/Android)
+    // Products table
+    pdf.setFontSize(12);
+    pdf.setFont(undefined,'bold');
+    pdf.text('SẢN PHẨM',margin,y);
+    y+=7;
+    
+    // Table header
+    pdf.setFontSize(9);
+    pdf.setFont(undefined,'bold');
+    pdf.text('STT',margin,y);
+    pdf.text('Tên sản phẩm',margin+10,y);
+    pdf.text('SL',margin+90,y);
+    pdf.text('ĐVT',margin+105,y);
+    pdf.text('Đơn giá',margin+125,y,{align:'right'});
+    pdf.text('Thành tiền',pageWidth-margin,y,{align:'right'});
+    y+=5;
+    
+    // Table line
+    pdf.line(margin,y,pageWidth-margin,y);
+    y+=5;
+    
+    // Products
+    pdf.setFont(undefined,'normal');
+    productList.forEach((product,index)=>{
+      if(y>270){
+        pdf.addPage();
+        y=20;
+      }
+      
+      pdf.text(`${index+1}`,margin,y);
+      pdf.text(product.name.substring(0,40),margin+10,y);
+      pdf.text(`${product.quantity}`,margin+90,y);
+      pdf.text(product.unit,margin+105,y);
+      pdf.text(formatAmount(product.unitPrice).replace(currency==='VND'?'₫':'¥',''),margin+125,y,{align:'right'});
+      pdf.text(formatAmount(product.total).replace(currency==='VND'?'₫':'¥',''),pageWidth-margin,y,{align:'right'});
+      y+=6;
+    });
+    
+    y+=5;
+    pdf.line(margin,y,pageWidth-margin,y);
+    y+=7;
+    
+    // Totals
+    pdf.setFont(undefined,'normal');
+    pdf.text('Tạm tính:',margin+100,y);
+    pdf.text(formatAmount(subtotal),pageWidth-margin,y,{align:'right'});
+    y+=6;
+    
+    pdf.text(`VAT (${Math.round(vatRate*100)}%):`,margin+100,y);
+    pdf.text(formatAmount(vatAmount),pageWidth-margin,y,{align:'right'});
+    y+=6;
+    
+    pdf.line(margin+100,y,pageWidth-margin,y);
+    y+=7;
+    
+    pdf.setFontSize(12);
+    pdf.setFont(undefined,'bold');
+    pdf.text('TỔNG CỘNG:',margin+100,y);
+    pdf.text(formatAmount(grandTotal),pageWidth-margin,y,{align:'right'});
+    
+    // Footer
+    y=280;
+    pdf.setFontSize(8);
+    pdf.setFont(undefined,'italic');
+    pdf.text('Cảm ơn quý khách! / Thank you!',pageWidth/2,y,{align:'center'});
+    
+    // Save or open PDF
     const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const fileName=`${invoiceCode}-${Date.now()}.pdf`;
     
     if(isMobile){
-      // For mobile: Create blob and open in new window
       const pdfBlob=pdf.output('blob');
       const url=URL.createObjectURL(pdfBlob);
-      
-      // Try to open in new window
       const newWindow=window.open(url,'_blank');
       
       if(newWindow){
         setTimeout(()=>{
-          alert('📄 PDF đã mở!\n\n✅ Nhấn Share (⬆️) → "Save to Files"\n✅ Hoặc "Print" → "Save as PDF"\n\nPDFが開きました！');
-        },800);
+          alert('📄 PDF đã mở!\n\n✅ Nhấn Share → "Save to Files"\n✅ Hoặc "Print" → "Save as PDF"');
+        },500);
       }else{
-        // Fallback: Create download link
         const a=document.createElement('a');
         a.href=url;
-        const invoiceCode=document.getElementById('invoice-code').value||'invoice';
-        const fileName=invoiceCode+'-'+Date.now()+'.pdf';
         a.download=fileName;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        alert('✅ PDF đã tải xuống: '+fileName);
+        alert('✅ PDF đã tải: '+fileName);
       }
     }else{
-      // For desktop: Download PDF
-      const invoiceCode=document.getElementById('invoice-code').value||'invoice';
-      const fileName=invoiceCode+'-'+Date.now()+'.pdf';
       pdf.save(fileName);
-      alert('✅ PDF đã tải xuống: '+fileName);
+      alert('✅ PDF đã tải: '+fileName);
     }
     
-    // Restore button text
-    document.querySelector('button[onclick="exportInvoice()"]').textContent=originalText;
+    btn.textContent=originalText;
+    btn.disabled=false;
     
   }catch(error){
     console.error('Export error:',error);
-    alert('❌ Lỗi xuất PDF / エラー: '+error.message);
-    document.querySelector('button[onclick="exportInvoice()"]').textContent='Xuất hóa đơn & Thu tiền 💰';
+    alert('❌ Lỗi: '+error.message);
+    const btn=document.querySelector('button[onclick="exportInvoice()"]');
+    btn.textContent='Xuất hóa đơn & Thu tiền 💰';
+    btn.disabled=false;
   }
 }
 
